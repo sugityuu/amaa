@@ -90,7 +90,30 @@
             background: rgba(99, 102, 241, 0.5);
             border-radius: 10px;
         }
-    </style>
+    
+/* 自由に動くキャラクター＆感情リアクション */
+#main-character-container { position:relative; overflow:visible; animation: mascotDrift 5.8s ease-in-out infinite; transform-origin:center bottom; }
+#main-character-container #selected-character-art { animation: mascotWander 7.5s ease-in-out infinite; transform-origin:center bottom; }
+#main-character-container #selected-character-art img { transition:transform .22s ease, filter .22s ease; filter:drop-shadow(0 5px 0 rgba(0,0,0,.22)); }
+#main-character-container.char-happy #selected-character-art { animation: mascotCelebrate .72s cubic-bezier(.2,.9,.25,1.4) 2; }
+#main-character-container.char-happy #selected-character-art img { filter:drop-shadow(0 0 9px #fde047) drop-shadow(0 0 18px #fb923c); }
+#main-character-container.char-sad #selected-character-art { animation: mascotSad .6s ease-in-out 2; }
+#main-character-container.char-sad #selected-character-art img { filter:grayscale(.55) drop-shadow(0 0 7px #60a5fa); }
+#main-character-container.char-happy::after, #main-character-container.char-sad::after { position:absolute; z-index:15; top:-8px; right:-5px; font-size:27px; pointer-events:none; animation: emotionPop .85s ease-out both; }
+#main-character-container.char-happy::after { content:'✨💖'; }
+#main-character-container.char-sad::after { content:'💧…'; }
+@keyframes mascotDrift { 0%,100%{transform:translate(0,0) rotate(0)} 25%{transform:translate(5px,-7px) rotate(2deg)} 50%{transform:translate(-4px,-2px) rotate(-1.5deg)} 75%{transform:translate(3px,-9px) rotate(1deg)} }
+@keyframes mascotWander { 0%,100%{translate:0 0} 18%{translate:7px -2px} 42%{translate:-8px 2px} 68%{translate:4px -5px} 84%{translate:-3px 0} }
+@keyframes mascotCelebrate { 0%{transform:translateY(0) rotate(0) scale(1)} 22%{transform:translateY(-22px) rotate(-9deg) scale(1.12)} 45%{transform:translateY(0) rotate(8deg) scale(1.16)} 68%{transform:translateY(-13px) rotate(-5deg) scale(1.1)} 100%{transform:translateY(0) rotate(0) scale(1)} }
+@keyframes mascotSad { 0%,100%{transform:translateY(0) rotate(0)} 25%{transform:translateY(5px) rotate(-6deg)} 50%{transform:translateY(3px) rotate(6deg) scale(.94)} 75%{transform:translateY(5px) rotate(-4deg)} }
+@keyframes emotionPop { 0%{opacity:0;transform:scale(.3) translateY(8px)} 25%{opacity:1;transform:scale(1.25) translateY(-5px)} 100%{opacity:0;transform:scale(1) translateY(-22px)} }
+#celebration-overlay.show { animation: victoryPulse .48s ease-in-out 2; }
+.celebration-title { text-shadow:0 0 12px #fff,0 0 26px #facc15,0 0 42px #f97316; animation: victoryTitle .6s cubic-bezier(.2,1.3,.3,1) both; }
+@keyframes victoryPulse { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.45)} }
+@keyframes victoryTitle { 0%{transform:scale(.25) rotate(-10deg);opacity:0} 65%{transform:scale(1.2) rotate(3deg);opacity:1} 100%{transform:scale(1) rotate(0);opacity:1} }
+@media (prefers-reduced-motion: reduce) { #main-character-container, #main-character-container #selected-character-art, #celebration-overlay.show, .celebration-title { animation:none !important; } }
+
+</style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between overflow-x-hidden">
 
@@ -859,7 +882,7 @@
             const icons=['✨','⭐','🎉','💎','🪙','🌟','🎊','⚡','💫','🏆','🔥','✨','⭐','🎉','💎','🪙'];
             icons.forEach((icon,i)=>{const el=document.createElement('span');el.className='celebration-particle';el.textContent=icon;el.style.setProperty('--dx',`${Math.cos(i*Math.PI/8)*Math.min(innerWidth*.48,360)}px`);el.style.setProperty('--dy',`${Math.sin(i*Math.PI/8)*Math.min(innerHeight*.42,300)}px`);el.style.animationDelay=`${(i%4)*.025}s`;overlay.appendChild(el);});
             overlay.classList.add('show'); const card=document.getElementById('quiz-card'); if(card){card.classList.remove('correct-shake');void card.offsetWidth;card.classList.add('correct-shake');}
-            setTimeout(()=>{overlay.classList.remove('show');overlay.innerHTML='';if(card)card.classList.remove('correct-shake');},1350);
+            setTimeout(()=>{overlay.classList.remove('show');overlay.innerHTML='';if(card)card.classList.remove('correct-shake');},1750);
         }
 
         // キャラクター表情変化
@@ -898,6 +921,8 @@
         }
 
         function triggerCharacterInteraction() {
+            const reactionTarget = document.getElementById('main-character-container');
+            if (reactionTarget) { reactionTarget.classList.remove('char-happy','char-sad'); void reactionTarget.offsetWidth; reactionTarget.classList.add('char-happy'); setTimeout(() => reactionTarget.classList.remove('char-happy'), 1500); }
             playSound('click');
             const bubble = document.getElementById('char-bubble');
             const quotes = [
@@ -913,6 +938,17 @@
             container.classList.add('char-happy');
             setTimeout(() => container.classList.remove('char-happy'), 600);
         }
+
+
+        // キャラクターが時々自分から小さくリアクションする
+        setInterval(() => {
+            const mascot = document.getElementById('main-character-container');
+            if (!mascot || document.hidden || mascot.offsetParent === null) return;
+            if (Math.random() < 0.3 && !mascot.classList.contains('char-happy') && !mascot.classList.contains('char-sad')) {
+                mascot.classList.add('char-happy');
+                setTimeout(() => mascot.classList.remove('char-happy'), 900);
+            }
+        }, 7000);
 
         /* ヘッダー＆ステータス更新 */
         function updateHeaderUI() {
